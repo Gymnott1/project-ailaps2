@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Vehicle - License Plate Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .navbar {
+            background-color: #343a40;
+            padding: 1rem;
+        }
+        .navbar-brand {
+            color: white !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        .nav-link:hover {
+            color: white !important;
+        }
+        .form-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .form-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #343a40;
+        }
+        .form-title i {
+            font-size: 2rem;
+            color: #0d6efd;
+            margin-bottom: 1rem;
+        }
+        .form-control {
+            margin-bottom: 1rem;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 0.75rem;
+            margin-top: 1rem;
+        }
+        .alert {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'scanner:home' %}">
+                <i class="fas fa-camera"></i> License Plate Scanner
+            </a>
+            <div>
+                <a href="{% url 'scanner:admin_dashboard' %}" class="nav-link d-inline-block">Dashboard</a>
+                <a href="{% url 'scanner:admin_logout' %}" class="nav-link d-inline-block">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="form-container">
+        <div class="form-title">
+            <i class="fas fa-car"></i>
+            <h2>Edit Vehicle</h2>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="plate_number" class="form-label">License Plate Number</label>
+                <input type="text" class="form-control" id="plate_number" name="plate_number" value="{{ vehicle.plate_number }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="owner_name" class="form-label">Owner Name</label>
+                <input type="text" class="form-control" id="owner_name" name="owner_name" value="{{ vehicle.owner_name|default:'' }}">
+            </div>
+            <div class="mb-3">
+                <label for="owner_phone" class="form-label">Owner Phone</label>
+                <input type="tel" class="form-control" id="owner_phone" name="owner_phone" value="{{ vehicle.owner_phone }}">
+            </div>
+            <div class="mb-3">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="is_insured" name="is_insured" {% if vehicle.is_insured %}checked{% endif %}>
+                    <label class="form-check-label" for="is_insured">Vehicle is Insured</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="insurance_expiry" class="form-label">Insurance Expiry Date</label>
+                <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry" value="{{ vehicle.insurance_expiry|date:'Y-m-d' }}">
+            </div>
+            <button type="submit" class="btn btn-primary btn-submit">Update Vehicle</button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

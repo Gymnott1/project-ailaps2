@@ -1,0 +1,9 @@
+Django==5.0.2
+easyocr==1.7.1
+opencv-python==4.9.0.80
+Pillow==10.2.0
+numpy==1.26.4
+torch==2.2.1
+torchvision==0.17.1
+django-crispy-forms==2.1
+python-dotenv==1.0.1

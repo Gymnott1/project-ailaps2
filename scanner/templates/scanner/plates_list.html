@@ -1,0 +1,64 @@
+{% extends 'scanner/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Recent Scans -->
+    <h4>Recent Scans</h4>
+    <div class="row mb-4">
+        {% for scan in scan_records %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <img src="{% static scan.image %}" class="card-img-top" alt="Plate">
+                <div class="card-body p-2">
+                    <h6>{{ scan.plate_number }}</h6>
+                    <small class="text-muted">{{ scan.scan_date|date:"Y-m-d H:i" }}</small>
+                    {% if scan.insurance_status %}
+                        <span class="badge bg-success">Insured</span>
+                    {% else %}
+                        <span class="badge bg-danger">Not Insured</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">No scans yet</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Database Records -->
+    <h4>Database Records</h4>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Plate Number</th>
+                    <th>Insurance Status</th>
+                    <th>Date Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in vehicles %}
+                <tr>
+                    <td>{{ vehicle.plate_number }}</td>
+                    <td>
+                        {% if vehicle.is_insured %}
+                            <span class="badge bg-success">Insured</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not Insured</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ vehicle.date_added|date:"Y-m-d" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center">No vehicles in database</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,364 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Vehicle Insurance Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .status-badge.insured {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        .status-badge.not-insured {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-car"></i> Vehicle Insurance Scanner</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'scan' %}">Scanner</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin_logout' %}">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Vehicles</h5>
+                        <h2 class="mb-0">{{ total_vehicles }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Insured Vehicles</h5>
+                        <h2 class="mb-0">{{ insured_vehicles }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Uninsured Vehicles</h5>
+                        <h2 class="mb-0">{{ uninsured_vehicles }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Scans Today</h5>
+                        <h2 class="mb-0">{{ scans_today }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scan Records Table -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Scan Records</h5>
+                <div>
+                    <button class="btn btn-secondary" id="exportScans">
+                        <i class="fas fa-download"></i> Export Records
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="scanRecordsTable">
+                        <thead>
+                            <tr>
+                                <th>Scan Time</th>
+                                <th>Plate Number</th>
+                                <th>Insurance Status</th>
+                                <th>Location</th>
+                                <th>Scanned By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scan_records %}
+                            <tr>
+                                <td>{{ scan.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                <td>{{ scan.plate_number }}</td>
+                                <td>
+                                    <span class="status-badge {% if scan.is_insured %}insured{% else %}not-insured{% endif %}">
+                                        {{ scan.insurance_status }}
+                                    </span>
+                                </td>
+                                <td>{{ scan.location|default:"N/A" }}</td>
+                                <td>{{ scan.scanned_by }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Database Table -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Vehicle Database</h5>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vehicleModal">
+                    <i class="fas fa-plus"></i> Add Vehicle
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="vehiclesTable">
+                        <thead>
+                            <tr>
+                                <th>Plate Number</th>
+                                <th>Owner Name</th>
+                                <th>Phone Number</th>
+                                <th>Insurance Status</th>
+                                <th>Insurance Expiry</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in vehicles %}
+                            <tr>
+                                <td>{{ vehicle.plate_number }}</td>
+                                <td>{{ vehicle.owner_name|default:"Not registered" }}</td>
+                                <td>{{ vehicle.owner_phone }}</td>
+                                <td>
+                                    <span class="status-badge {% if vehicle.is_insured %}insured{% else %}not-insured{% endif %}">
+                                        {% if vehicle.is_insured %}
+                                            <i class="fas fa-check-circle"></i> Insured
+                                        {% else %}
+                                            <i class="fas fa-times-circle"></i> Not Insured
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ vehicle.insurance_expiry|date:"Y-m-d"|default:"Not set" }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary edit-vehicle" data-vehicle-id="{{ vehicle.id }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger delete-vehicle" data-vehicle-id="{{ vehicle.id }}" data-plate="{{ vehicle.plate_number }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Modal -->
+    <div class="modal fade" id="vehicleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="vehicleForm">
+                        <input type="hidden" id="vehicleId">
+                        <div class="mb-3">
+                            <label class="form-label">Plate Number</label>
+                            <input type="text" class="form-control" id="plateNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Owner Name</label>
+                            <input type="text" class="form-control" id="ownerName">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="ownerPhone">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="isInsured">
+                                <label class="form-check-label">Is Insured</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Insurance Expiry Date</label>
+                            <input type="date" class="form-control" id="insuranceExpiry">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveVehicle">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete vehicle with plate number <strong id="deletePlateNumber"></strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.0.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.0.1/js/buttons.html5.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTables for vehicles
+            $('#vehiclesTable').DataTable({
+                order: [[0, 'asc']],
+                pageLength: 10,
+                language: {
+                    search: "Search vehicles:"
+                }
+            });
+            
+            // Initialize DataTables for scan records with export functionality
+            $('#scanRecordsTable').DataTable({
+                order: [[0, 'desc']],  // Sort by scan time descending
+                pageLength: 10,
+                language: {
+                    search: "Search scans:"
+                }
+            });
+            
+            // Handle export button click
+            $('#exportScans').click(function() {
+                const rows = $('#scanRecordsTable').DataTable().rows().data();
+                let csv = 'Scan Time,Plate Number,Insurance Status,Location,Scanned By\n';
+                
+                rows.each(function(row) {
+                    csv += row.join(',') + '\n';
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'scan_records_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            });
+
+            // Handle vehicle form submission
+            $('#saveVehicle').click(function() {
+                const vehicleId = $('#vehicleId').val();
+                const data = {
+                    plate_number: $('#plateNumber').val(),
+                    owner_name: $('#ownerName').val(),
+                    owner_phone: $('#ownerPhone').val(),
+                    is_insured: $('#isInsured').is(':checked'),
+                    insurance_expiry: $('#insuranceExpiry').val()
+                };
+
+                const url = vehicleId ? 
+                    `/admin/vehicle/edit/${vehicleId}/` : 
+                    '/admin/vehicle/add/';
+
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        location.reload();
+                    },
+                    error: function(xhr) {
+                        alert('Error: ' + xhr.responseJSON.message);
+                    }
+                });
+            });
+
+            // Handle edit button click
+            $('.edit-vehicle').click(function() {
+                const vehicleId = $(this).data('vehicle-id');
+                const row = $(this).closest('tr');
+                
+                $('#vehicleId').val(vehicleId);
+                $('#plateNumber').val(row.find('td:eq(0)').text());
+                $('#ownerName').val(row.find('td:eq(1)').text());
+                $('#ownerPhone').val(row.find('td:eq(2)').text());
+                $('#isInsured').prop('checked', row.find('.status-badge').hasClass('insured'));
+                $('#insuranceExpiry').val(row.find('td:eq(4)').text());
+                
+                $('.modal-title').text('Edit Vehicle');
+                $('#vehicleModal').modal('show');
+            });
+
+            // Handle delete button click
+            $('.delete-vehicle').click(function() {
+                const vehicleId = $(this).data('vehicle-id');
+                const plateNumber = $(this).data('plate');
+                
+                $('#deletePlateNumber').text(plateNumber);
+                $('#confirmDelete').data('vehicle-id', vehicleId);
+                $('#deleteModal').modal('show');
+            });
+
+            // Handle delete confirmation
+            $('#confirmDelete').click(function() {
+                const vehicleId = $(this).data('vehicle-id');
+                window.location.href = `/admin/vehicle/delete/${vehicleId}/`;
+            });
+
+            // Reset form when adding new vehicle
+            $('#vehicleModal').on('hidden.bs.modal', function() {
+                $('#vehicleForm')[0].reset();
+                $('#vehicleId').val('');
+                $('.modal-title').text('Add Vehicle');
+            });
+        });
+    </script>
+</body>
+</html>
